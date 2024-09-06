@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuberculosis Detection - DAS medhub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header-title {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .header-title .das {
+            color: green;
+        }
+
+        .header-title .medhub {
+            color: orange;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: darkgreen;
+        }
+
+        #predictionResult {
+            margin-top: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        let model;
+
+        // Load the TensorFlow.js model (converted from your TensorFlow model)
+        async function loadModel() {
+            model = await tf.loadGraphModel('model/model.json');
+            console.log("Model loaded successfully!");
+        }
+
+        // Preprocess the uploaded image
+        async function preprocessImage(imageElement) {
+            // Load the image into a tensor
+            let tensor = tf.browser.fromPixels(imageElement)
+                .resizeNearestNeighbor([224, 224]) // Resize to model's input shape
+                .toFloat()
+                .expandDims(); // Add batch dimension
+
+            // Normalize the image
+            return tensor.div(tf.scalar(255));
+        }
+
+        // Make a prediction
+        async function predict() {
+            if (!model) {
+                alert("Model not loaded. Please wait for the model to load.");
+                return;
+            }
+
+            const fileInput = document.getElementById('imageUpload');
+            const img = document.getElementById('preview');
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                img.src = event.target.result;
+
+                img.onload = async function () {
+                    const preprocessedImage = await preprocessImage(img);
+                    const prediction = model.predict(preprocessedImage);
+                    const confidence = prediction.dataSync()[0];
+
+                    const resultText = confidence > 0.5 
+                        ? "Prediction: Tuberculosis detected with high confidence." 
+                        : "Prediction: No tuberculosis detected.";
+                    
+                    document.getElementById('predictionResult').innerText = resultText;
+                };
+            };
+
+            if (fileInput.files[0]) {
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                alert("Please upload an image.");
+            }
+        }
+
+        // Load the model when the page loads
+        window.onload = loadModel;
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1 class="header-title"><span class="das">DAS</span> <span class="medhub">medhub</span></h1>
+    </div>
+
+    <h1>Tuberculosis Detection from Chest X-Ray</h1>
+    <form>
+        <label for="imageUpload">Upload Chest X-Ray Image:</label>
+        <input type="file" id="imageUpload" accept="image/*">
+        <img id="preview" alt="X-Ray Preview">
+        <button type="button" onclick="predict()">Make Prediction</button>
+    </form>
+
+    <div id="predictionResult">Prediction will appear here.</div>
+</body>
+</html>
