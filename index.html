@@ -74,7 +74,7 @@
 
         // Load the TensorFlow.js model (converted from your TensorFlow model)
         async function loadModel() {
-            model = await tf.loadGraphModel('model/model.json');
+            model = await tf.loadGraphModel('model/model.json');  // Path to your TensorFlow.js model
             console.log("Model loaded successfully!");
         }
 
@@ -107,11 +107,11 @@
                 img.onload = async function () {
                     const preprocessedImage = await preprocessImage(img);
                     const prediction = model.predict(preprocessedImage);
-                    const confidence = prediction.dataSync()[0];
+                    const confidence = prediction.dataSync()[0];  // Confidence score for "Tuberculosis"
 
                     const resultText = confidence > 0.5 
-                        ? "Prediction: Tuberculosis detected with high confidence." 
-                        : "Prediction: No tuberculosis detected.";
+                        ? `Prediction: Tuberculosis detected with ${Math.round(confidence * 100)}% confidence.` 
+                        : `Prediction: No tuberculosis detected with ${Math.round((1 - confidence) * 100)}% confidence.`;
                     
                     document.getElementById('predictionResult').innerText = resultText;
                 };
