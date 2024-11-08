@@ -118,9 +118,9 @@
                 const predictions = await model.predict(tensorImg).data();
 
                 // Handle the prediction result
-                const isInfected = predictions[0] > 0.5;
+                const isInfected = predictions[0] <= 0.5;
                 const confidence = isInfected ? (1 - predictions[0]) * 100 : predictions[0] * 100;
-                const result = isInfected ? 'Tuberculosis' : 'Normal';
+                const result = isInfected ? 'Normal':'Tuberculosis';
 
                 // Display the result with confidence score
                 resultDiv.innerText = `Prediction: ${result} (${confidence.toFixed(2)}% confidence)`;
