@@ -5,142 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuberculosis Detection - DAS medhub</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
+            text-align: center;
             margin: 20px;
         }
 
         h1 {
-            text-align: center;
-            color: #333;
+            color: #FFA500; /* Orange for DAS */
+            display: inline;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 50px;
+        h1 span {
+            color: #008000; /* Green for medhub */
         }
 
-        .header-title {
-            font-size: 32px;
+        #image-container {
+            margin-top: 20px;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.5em;
             font-weight: bold;
         }
 
-        .header-title .das {
-            color: green;
-        }
-
-        .header-title .medhub {
-            color: orange;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        input[type="file"] {
-            display: block;
-            margin-bottom: 20px;
-        }
-
-        button {
+        #predict-button {
+            display: none;
+            margin-top: 20px;
             padding: 10px 20px;
-            background-color: green;
+            font-size: 16px;
+            background-color: #4CAF50;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
         }
 
-        button:hover {
-            background-color: darkgreen;
-        }
-
-        #predictionResult {
-            margin-top: 30px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            margin-top: 20px;
+        #predict-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
     </style>
+</head>
+<body>
+    <h1>DAS <span>medhub</span></h1>
+    <h2>Tuberculosis classification from chest x-rays</h2>
+
+    <input type="file" id="image-upload" accept="image/*">
+    <button id="predict-button" onclick="predict()">Predict</button>
+
+    <div id="image-container">
+        <img id="uploaded-image" src="#" alt="Uploaded Image" style="max-width: 300px; display: none;">
+    </div>
+
+    <div id="result"></div>
+
     <script>
         let model;
 
-        // Load the TensorFlow.js model (converted from your TensorFlow model)
+        // Load the model
         async function loadModel() {
-            model = await tf.loadGraphModel('model/model.json');  // Path to your TensorFlow.js model
-            console.log("Model loaded successfully!");
-        }
-
-        // Preprocess the uploaded image
-        async function preprocessImage(imageElement) {
-            // Load the image into a tensor
-            let tensor = tf.browser.fromPixels(imageElement)
-                .resizeNearestNeighbor([224, 224]) // Resize to model's input shape
-                .toFloat()
-                .expandDims(); // Add batch dimension
-
-            // Normalize the image
-            return tensor.div(tf.scalar(255));
-        }
-
-        // Make a prediction
-        async function predict() {
-            if (!model) {
-                alert("Model not loaded. Please wait for the model to load.");
-                return;
+            try {
+                model = await tf.loadGraphModel('model/model.json');
+                console.log('Model loaded successfully');
+            } catch (error) {
+                console.error('Error loading model:', error);
+                resultDiv.innerText = 'Error loading model. Please try again later.';
             }
+        }
 
-            const fileInput = document.getElementById('imageUpload');
-            const img = document.getElementById('preview');
+        loadModel();  // Call loadModel when the page loads
+
+        const imageUpload = document.getElementById('image-upload');
+        const uploadedImage = document.getElementById('uploaded-image');
+        const predictButton = document.getElementById('predict-button');
+        const resultDiv = document.getElementById('result');
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
             const reader = new FileReader();
 
-            reader.onload = function (event) {
-                img.src = event.target.result;
+            // Clear previous results when a new image is uploaded
+            resultDiv.innerText = '';
+            predictButton.disabled = true; // Disable the button until the image is loaded
 
-                img.onload = async function () {
-                    const preprocessedImage = await preprocessImage(img);
-                    const prediction = model.predict(preprocessedImage);
-                    const confidence = prediction.dataSync()[0];  // Confidence score for "Tuberculosis"
-
-                    const resultText = confidence > 0.5 
-                        ? `Prediction: Tuberculosis detected with ${Math.round(confidence * 100)}% confidence.` 
-                        : `Prediction: No tuberculosis detected with ${Math.round((1 - confidence) * 100)}% confidence.`;
-                    
-                    document.getElementById('predictionResult').innerText = resultText;
-                };
+            reader.onload = function(e) {
+                uploadedImage.src = e.target.result;
+                uploadedImage.style.display = 'block';
+                predictButton.style.display = 'inline-block'; // Show the predict button
+                predictButton.disabled = false; // Enable the button after the image is displayed
             };
 
-            if (fileInput.files[0]) {
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                alert("Please upload an image.");
+            reader.readAsDataURL(file);
+        });
+
+        async function predict() {
+            predictButton.disabled = true; // Disable the button during prediction
+            resultDiv.innerText = 'Predicting...';
+
+            try {
+                // Preprocess the image
+                const tensorImg = tf.browser.fromPixels(uploadedImage)
+                    .resizeNearestNeighbor([224, 224]) // Resize to model's input size
+                    .toFloat()
+                    .expandDims(0)
+                    .div(tf.scalar(255));  // Normalize image to [0, 1] range
+
+                // Make the prediction
+                const predictions = await model.predict(tensorImg).data();
+
+                // Handle the prediction result
+                const isInfected = predictions[0] <= 0.5;
+                const confidence = isInfected ? (1 - predictions[0]) * 100 : predictions[0] * 100;
+                const result = isInfected ? 'Tuberculosis' : 'Normal';
+
+                // Display the result with confidence score
+                resultDiv.innerText = `Prediction: ${result} (${confidence.toFixed(2)}% confidence)`;
+            } catch (error) {
+                console.error('Error during prediction:', error);
+                resultDiv.innerText = 'Error during prediction. Please try again later.';
             }
+
+            predictButton.disabled = false; // Enable the button again
         }
-
-        // Load the model when the page loads
-        window.onload = loadModel;
     </script>
-</head>
-<body>
-    <div class="header">
-        <h1 class="header-title"><span class="das">DAS</span> <span class="medhub">medhub</span></h1>
-    </div>
-
-    <h1>Tuberculosis Detection from Chest X-Ray</h1>
-    <form>
-        <label for="imageUpload">Upload Chest X-Ray Image:</label>
-        <input type="file" id="imageUpload" accept="image/*">
-        <img id="preview" alt="X-Ray Preview">
-        <button type="button" onclick="predict()">Make Prediction</button>
-    </form>
-
-    <div id="predictionResult">Prediction will appear here.</div>
 </body>
 </html>
