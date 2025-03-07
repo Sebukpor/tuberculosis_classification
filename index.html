@@ -3,259 +3,803 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuberculosis Detection - DAS medhub</title>
+    <title>Pneumonia Detection - DAS medhub</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #4CAF50; /* Green */
-            --secondary-color: #FFA500; /* Orange */
-            --background-color: #f4f6f8;
-            --text-color: #333;
-            --success-color: #4CAF50;
-            --error-color: #f44336;
+            --primary-color: green;
+            --secondary-color: green;
+            --accent-color: orange;
+            --success-color: green;
+            --warning-color: #fb8500;
+            --danger-color: #ef476f;
+            --light-bg: #f8fafc;
+            --dark-bg: #1e293b;
+            --card-bg: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+            line-height: 1.6;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0;
             min-height: 100vh;
+            display: flex;
             flex-direction: column;
         }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            max-width: 600px;
-            width: 100%;
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 0;
             text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
         }
 
-        h1 {
-            font-size: 2.5rem;
+        .logo {
+            font-size: 2.2rem;
             font-weight: 700;
-            color: var(--secondary-color);
+            letter-spacing: 1px;
             margin-bottom: 0.5rem;
         }
 
-        h1 span {
-            color: var(--primary-color);
+        .logo span {
+            color: var(--accent-color);
         }
 
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: var(--text-color);
+        .subheading {
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
             margin-bottom: 2rem;
         }
 
-        .upload-section {
-            margin-bottom: 2rem;
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
-        .upload-label {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
         }
 
-        .upload-label:hover {
-            background-color: #45a049;
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
-        #image-upload {
-            display: none;
+        .image-section {
+            text-align: center;
+            position: relative;
         }
 
-        #image-container {
-            margin-top: 1.5rem;
+        .image-container {
+            margin: 2rem auto;
+            width: 100%;
+            height: 300px;
+            position: relative;
+            background-color: #f1f5f9;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .image-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            color: #64748b;
         }
 
         #uploaded-image {
             max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 100%;
+            object-fit: contain;
             display: none;
+            transition: transform 0.5s ease;
         }
 
-        #predict-button {
-            margin-top: 1.5rem;
-            padding: 1rem 2rem;
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            border: 2px solid var(--primary-color);
+            color: white;
+            background-color: var(--primary-color);
+            padding: 12px 24px;
+            border-radius: 50px;
             font-size: 1rem;
             font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
             background-color: var(--primary-color);
             color: white;
-            border: none;
-            border-radius: 8px;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #3bad6e;
+            border-color: #3bad6e;
+        }
+
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            display: none;
+            height: 100%;
+            width: 100%;
         }
 
-        #predict-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
         }
 
-        #predict-button:hover:not(:disabled) {
-            background-color: #45a049;
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 1rem;
+        }
+
+        .result-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .result-container {
+            text-align: center;
+            padding: 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .result-card {
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #result {
-            margin-top: 1.5rem;
-            font-size: 1.25rem;
-            font-weight: 500;
-            padding: 1rem;
-            border-radius: 8px;
-            display: none;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
 
-        .result-success {
-            background-color: #e8f5e9;
+        #result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .normal {
             color: var(--success-color);
-            border: 2px solid var(--success-color);
         }
 
-        .result-error {
-            background-color: #ffebee;
-            color: var(--error-color);
-            border: 2px solid var(--error-color);
+        .pneumonia {
+            color: var(--danger-color);
         }
 
-        .loading {
+        .demographics-form {
             display: none;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
+            text-align: left;
         }
 
-        .spinner {
-            width: 2rem;
-            height: 2rem;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+        .form-group {
+            margin-bottom: 1rem;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        #loading-indicator {
+            width: 100%;
+            text-align: center;
+            padding: 1rem 0;
+            display: none;
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7);
+            }
+            
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+            }
+            
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+            }
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 1.5rem;
+            background-color: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .confidence-meter {
+            margin-top: 1rem;
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            width: 0;
+            transition: width 1s ease, background-color 1s ease;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>DAS <span>medhub</span></h1>
-        <h2>Tuberculosis Classification from Chest X-Rays</h2>
+    <header>
+        <div class="logo">DAS <span>medhub</span></div>
+        <div class="subheading">AI-Powered tuberculosis Detection</div>
+    </header>
 
-        <div class="upload-section">
-            <label for="image-upload" class="upload-label">Upload X-Ray Image</label>
-            <input type="file" id="image-upload" accept="image/*">
+    <main>
+        <div class="container">
+            <div class="card image-section fade-in">
+                <h2><i class="fas fa-lungs"></i> X-ray Image</h2>
+                <div class="upload-btn-wrapper">
+                    <button class="btn"><i class="fas fa-upload"></i> Upload X-ray Image</button>
+                    <input type="file" id="image-upload" accept="image/*">
+                </div>
+                <div class="image-container">
+                    <div id="image-placeholder" class="image-placeholder">
+                        <i class="fas fa-x-ray" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>Upload a chest X-ray image</p>
+                    </div>
+                    <img id="uploaded-image" src="#" alt="Uploaded X-ray Image">
+                </div>
+                <div class="controls">
+                    <button class="btn btn-outline btn-icon tooltip" onclick="zoomIn()">
+                        <i class="fas fa-search-plus"></i>
+                        <span class="tooltiptext">Zoom In</span>
+                    </button>
+                    <button class="btn btn-outline btn-icon tooltip" onclick="zoomOut()">
+                        <i class="fas fa-search-minus"></i>
+                        <span class="tooltiptext">Zoom Out</span>
+                    </button>
+                    <button class="btn btn-outline btn-icon tooltip" onclick="rotateImage()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="tooltiptext">Rotate</span>
+                    </button>
+                    <button class="btn btn-outline btn-icon tooltip" onclick="resetImage()">
+                        <i class="fas fa-undo"></i>
+                        <span class="tooltiptext">Reset</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card result-section fade-in">
+                <div class="result-container">
+                    <div>
+                        <h2><i class="fas fa-stethoscope"></i> Analysis Results</h2>
+                        <p>Upload an X-ray image and click Analyze to detect tuberculosis</p>
+                    </div>
+
+                    <div class="result-card">
+                        <p id="result">Waiting for image...</p>
+                        <div class="confidence-meter">
+                            <div id="confidence-bar" class="confidence-bar"></div>
+                        </div>
+                    </div>
+
+                    <div id="loading-indicator">
+                        <div class="progress-bar">
+                            <div id="progress" class="progress"></div>
+                        </div>
+                        <p style="margin-top: 0.5rem;">Processing image...</p>
+                    </div>
+
+                    <button id="predict-button" class="btn btn-success" onclick="predict()" disabled>
+                        <i class="fas fa-brain"></i> Analyze X-ray
+                    </button>
+
+                    <button id="download-button" class="btn" style="margin-top: 1rem; display: none;" onclick="showDemographicsForm()">
+                        <i class="fas fa-file-pdf"></i> Generate Report
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div id="image-container">
-            <img id="uploaded-image" src="#" alt="Uploaded Image">
+        <div class="card demographics-form" id="demographics-form">
+            <h2><i class="fas fa-user"></i> Patient Information</h2>
+            <form id="patient-form">
+                <div class="form-group">
+                    <label for="name" class="form-label">Patient Name</label>
+                    <input type="text" id="name" class="form-control" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="id" class="form-label">Patient ID</label>
+                    <input type="text" id="id" class="form-control" placeholder="Patient ID Number" required>
+                </div>
+                <div class="form-group">
+                    <label for="age" class="form-label">Age</label>
+                    <input type="number" id="age" class="form-control" placeholder="Patient Age" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender" class="form-label">Gender</label>
+                    <select id="gender" class="form-control">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notes" class="form-label">Additional Notes</label>
+                    <textarea id="notes" class="form-control" rows="3" placeholder="Medical notes or observations (optional)"></textarea>
+                </div>
+                <button type="button" class="btn btn-success" onclick="downloadPDF()">
+                    <i class="fas fa-download"></i> Download Report
+                </button>
+            </form>
         </div>
+    </main>
 
-        <button id="predict-button" onclick="predict()">Predict</button>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Analyzing...</p>
-        </div>
-
-        <div id="result"></div>
-    </div>
+    <footer>
+        <p>&copy; 2025 DAS medhub | AI-Powered Medical Diagnostics</p>
+    </footer>
 
     <script>
         let model;
+        let rotation = 0;
+        let scale = 1;
+        let predictionResult = null;
+        let predictionConfidence = 0;
 
         // Load the model
         async function loadModel() {
             try {
+                const loadingText = document.getElementById('result');
+                loadingText.innerText = 'Loading AI model...';
+                loadingText.classList.add('show');
+                
                 model = await tf.loadGraphModel('model/model.json');
+                
+                loadingText.innerText = 'AI model ready';
                 console.log('Model loaded successfully');
+                
+                // Hide the loading text after 2 seconds
+                setTimeout(() => {
+                    loadingText.innerText = 'Waiting for image...';
+                }, 2000);
             } catch (error) {
                 console.error('Error loading model:', error);
-                showResult('Error loading model. Please try again later.', 'error');
+                document.getElementById('result').innerText = 'Error loading model. Please refresh the page.';
+                document.getElementById('result').classList.add('show');
             }
         }
 
-        loadModel();  // Call loadModel when the page loads
+        loadModel(); // Call loadModel when the page loads
 
         const imageUpload = document.getElementById('image-upload');
         const uploadedImage = document.getElementById('uploaded-image');
+        const imagePlaceholder = document.getElementById('image-placeholder');
         const predictButton = document.getElementById('predict-button');
         const resultDiv = document.getElementById('result');
-        const loadingDiv = document.getElementById('loading');
+        const demographicsForm = document.getElementById('demographics-form');
+        const downloadButton = document.getElementById('download-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const progressBar = document.getElementById('progress');
 
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
+            if (!file) return;
+            
             const reader = new FileReader();
 
-            // Clear previous results when a new image is uploaded
-            resultDiv.innerText = '';
-            resultDiv.style.display = 'none';
-            predictButton.disabled = true; // Disable the button until the image is loaded
-
+            // Clear previous results and reset transformations
+            resultDiv.innerText = 'Image loaded. Click "Analyze X-ray" to process.';
+            resultDiv.classList.add('show');
+            resultDiv.className = resultDiv.className.replace('normal', '').replace('tuberculosis', '');
+            predictButton.disabled = true;
+            downloadButton.style.display = 'none';
+            confidenceBar.style.width = '0%';
+            scale = 1;
+            rotation = 0;
+            
             reader.onload = function(e) {
                 uploadedImage.src = e.target.result;
                 uploadedImage.style.display = 'block';
-                predictButton.style.display = 'inline-block'; // Show the predict button
-                predictButton.disabled = false; // Enable the button after the image is displayed
+                uploadedImage.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+                imagePlaceholder.style.display = 'none';
+                predictButton.disabled = false;
+                predictButton.classList.add('pulse');
             };
 
             reader.readAsDataURL(file);
         });
 
-        function showResult(message, type) {
-            resultDiv.innerText = message;
-            resultDiv.className = type === 'success' ? 'result-success' : 'result-error';
-            resultDiv.style.display = 'block';
+        function simulateProgress() {
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 90) {
+                    clearInterval(interval);
+                } else {
+                    width += Math.random() * 15;
+                    if (width > 90) width = 90;
+                    progressBar.style.width = `${width}%`;
+                }
+            }, 200);
+            
+            return interval;
         }
 
         async function predict() {
-            predictButton.disabled = true; // Disable the button during prediction
-            loadingDiv.style.display = 'block'; // Show loading spinner
-            resultDiv.style.display = 'none'; // Hide previous results
-
+            predictButton.disabled = true;
+            predictButton.classList.remove('pulse');
+            resultDiv.innerText = 'Analyzing X-ray...';
+            downloadButton.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            
+            const progressInterval = simulateProgress();
+            
             try {
-                // Preprocess the image
                 const tensorImg = tf.browser.fromPixels(uploadedImage)
-                    .resizeNearestNeighbor([224, 224]) // Resize to model's input size
+                    .resizeNearestNeighbor([224, 224])
                     .toFloat()
                     .expandDims(0)
-                    .div(tf.scalar(255));  // Normalize image to [0, 1] range
+                    .div(tf.scalar(255));
 
-                // Make the prediction
                 const predictions = await model.predict(tensorImg).data();
 
-                // Handle the prediction result
-                const isInfected = predictions[0] <= 0.5;
-                const confidence = isInfected ? (1 - predictions[0]) * 100 : predictions[0] * 100;
-                const result = isInfected ? 'Normal' : 'Tuberculosis';
-
-                // Display the result with confidence score
-                showResult(`Prediction: ${result} (${confidence.toFixed(2)}% confidence)`, 'success');
+                // Complete the progress bar
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    loadingIndicator.style.display = 'none';
+                    
+                    const isInfected = predictions[0] <= 0.5;
+                    const confidence = isInfected ? (1 - predictions[0]) * 100 : predictions[0] * 100;
+                    const result = isInfected ? 'Normal' : 'Tuberculosis';
+                    
+                    predictionResult = result;
+                    predictionConfidence = confidence;
+                    
+                    resultDiv.innerText = `Prediction: ${result} (${confidence.toFixed(1)}% confidence)`;
+                    resultDiv.classList.add(result.toLowerCase());
+                    
+                    // Animate confidence bar
+                    confidenceBar.style.width = `${confidence}%`;
+                    confidenceBar.style.backgroundColor = isInfected ? 
+                        'var(--success-color)' : 
+                        'var(--danger-color)';
+                    
+                    downloadButton.style.display = 'inline-block';
+                    predictButton.disabled = false;
+                }, 500);
             } catch (error) {
                 console.error('Error during prediction:', error);
-                showResult('Error during prediction. Please try again later.', 'error');
-            } finally {
-                loadingDiv.style.display = 'none'; // Hide loading spinner
-                predictButton.disabled = false; // Enable the button again
+                clearInterval(progressInterval);
+                loadingIndicator.style.display = 'none';
+                resultDiv.innerText = 'Error analyzing image. Please try again.';
+                predictButton.disabled = false;
             }
+        }
+
+        function zoomIn() {
+            scale += 0.1;
+            updateImageTransform();
+        }
+
+        function zoomOut() {
+            scale = Math.max(0.1, scale - 0.1); // Prevent zooming out too far
+            updateImageTransform();
+        }
+
+        function rotateImage() {
+            rotation += 90; // Rotate 90 degrees clockwise
+            updateImageTransform();
+        }
+
+        function resetImage() {
+            scale = 1;
+            rotation = 0;
+            updateImageTransform();
+        }
+
+        function updateImageTransform() {
+            uploadedImage.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+        }
+
+        function showDemographicsForm() {
+            demographicsForm.style.display = 'block';
+            demographicsForm.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+
+            const name = document.getElementById('name').value;
+            const id = document.getElementById('id').value;
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            const notes = document.getElementById('notes').value;
+
+            if (!name || !id || !age || !gender) {
+                alert("Please fill out all required patient information.");
+                return;
+            }
+
+            const pdf = new jsPDF();
+            
+            // Add header
+            pdf.setFontSize(22);
+            pdf.setTextColor(67, 97, 238);
+            pdf.text("DAS medhub", 105, 20, null, null, "center");
+            
+            pdf.setFontSize(16);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text("Tuberculosis Detection Report", 105, 30, null, null, "center");
+            
+            // Add line separator
+            pdf.setDrawColor(67, 97, 238);
+            pdf.setLineWidth(0.5);
+            pdf.line(20, 35, 190, 35);
+            
+            // Add date
+            const currentDate = new Date();
+            pdf.setFontSize(10);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`Report Date: ${formatDate(currentDate)}`, 20, 45);
+            
+            // Patient information
+            pdf.setFontSize(14);
+            pdf.setTextColor(67, 97, 238);
+            pdf.text("Patient Information", 20, 55);
+            
+            pdf.setFontSize(12);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(`Name: ${name}`, 25, 65);
+            pdf.text(`Patient ID: ${id}`, 25, 75);
+            pdf.text(`Age: ${age}`, 25, 85);
+            pdf.text(`Gender: ${gender}`, 25, 95);
+            
+            // Analysis results
+            pdf.setFontSize(14);
+            pdf.setTextColor(67, 97, 238);
+            pdf.text("Analysis Results", 20, 115);
+            
+            pdf.setFontSize(12);
+            
+            if (predictionResult === 'Normal') {
+                pdf.setTextColor(76, 175, 80); // Green for normal
+            } else {
+                pdf.setTextColor(239, 71, 111); // Red for pneumonia
+            }
+            
+            pdf.text(`Prediction: ${predictionResult}`, 25, 125);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(`Confidence: ${predictionConfidence.toFixed(1)}%`, 25, 135);
+            
+            // Add notes if any
+            if (notes) {
+                pdf.setFontSize(14);
+                pdf.setTextColor(67, 97, 238);
+                pdf.text("Clinical Notes", 20, 155);
+                
+                pdf.setFontSize(12);
+                pdf.setTextColor(0, 0, 0);
+                
+                const splitNotes = pdf.splitTextToSize(notes, 150);
+                pdf.text(splitNotes, 25, 165);
+            }
+            
+            // Add X-ray image
+            try {
+                const imgData = uploadedImage.src;
+                
+                // Position image below text (adjust as needed based on notes length)
+                const yPosition = notes ? 180 + (pdf.splitTextToSize(notes, 150).length * 7) : 180;
+                
+                pdf.addImage(imgData, 'JPEG', 60, yPosition, 90, 90);
+                
+                // Add disclaimer
+                pdf.setFontSize(8);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text("Disclaimer: This AI analysis is for informational purposes only and should not replace", 20, 280);
+                pdf.text("professional medical diagnosis. Please consult with a healthcare professional.", 20, 285);
+                
+            } catch(error) {
+                console.error("Error adding image to PDF", error);
+                pdf.text("Error including X-ray image in report.", 20, 180);
+            }
+            
+            pdf.save(`tuberculosis_report_${id}.pdf`);
+            
+            alert("Report downloaded successfully!");
         }
     </script>
 </body>
